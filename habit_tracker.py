@@ -51,32 +51,32 @@ st.markdown(
     <style>
     .habit-card {
         background-color: #ffffff;
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 15px;
-        box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+        border-radius: 10px;
+        padding: 10px 14px;
+        margin-bottom: 10px;
+        box-shadow: 0px 2px 6px rgba(0,0,0,0.06);
         transition: all 0.2s ease-in-out;
     }
     .habit-card:hover {
-        box-shadow: 0px 6px 18px rgba(0,0,0,0.15);
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.12);
     }
     .habit-title {
-        font-size: 18px;
+        font-size: 15px;
         font-weight: 600;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
     .habit-sub {
         color: #666;
-        font-size: 14px;
-        margin-bottom: 8px;
+        font-size: 12px;
+        margin-bottom: 6px;
     }
     .progress-container {
-        height: 10px;
+        height: 8px;
         width: 100%;
         background-color: #eee;
-        border-radius: 5px;
+        border-radius: 4px;
         overflow: hidden;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
     }
     .progress-bar {
         height: 100%;
@@ -115,17 +115,28 @@ if st.sidebar.button("Add Habit"):
     save_habits(st.session_state.habits)
     st.rerun()
 
+# --- Sorting helper ---
+def sort_habits(habits):
+    order = {"Daily": 1, "Weekly": 2, "Monthly": 3,
+             "2 months": 4, "3 months": 5, "6 months": 6}
+
+    def habit_key(h):
+        base_order = order.get(h["frequency"], 99)
+        goal_met = h["progress"] >= h["goal"]
+        # Put completed ones at bottom by adding 100
+        return (base_order + (100 if goal_met else 0), h["name"].lower())
+
+    return sorted(habits, key=habit_key)
+
 # --- Display habits ---
 if st.session_state.habits:
     st.subheader("📋 Your Habits")
-    for i, habit in enumerate(st.session_state.habits):
+    for i, habit in enumerate(sort_habits(st.session_state.habits)):
         progress_ratio = habit["progress"] / habit["goal"]
         progress_width = int(min(progress_ratio, 1) * 100)
 
-        # Change bar color if over goal
         bar_color = "#4CAF50" if habit["progress"] <= habit["goal"] else "#FFD700"
 
-        # Render card
         st.markdown(
             f"""
             <div class="habit-card">
@@ -142,19 +153,19 @@ if st.session_state.habits:
 
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            if st.button("✅ Done", key=f"done_{i}"):
+            if st.button("✅", key=f"done_{i}"):
                 habit["progress"] += 1
                 save_habits(st.session_state.habits)
                 st.rerun()
         with col2:
-            if st.button("➖ Undo", key=f"undo_{i}"):
+            if st.button("➖", key=f"undo_{i}"):
                 if habit["progress"] > 0:
                     habit["progress"] -= 1
                     save_habits(st.session_state.habits)
                     st.rerun()
         with col3:
-            if st.button("🗑️ Delete", key=f"delete_{i}"):
-                st.session_state.habits.pop(i)
+            if st.button("🗑️", key=f"delete_{i}"):
+                st.session_state.habits.remove(habit)
                 save_habits(st.session_state.habits)
                 st.rerun()
 else:
