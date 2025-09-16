@@ -139,39 +139,48 @@ if st.session_state.habits:
         bar_color = "#4CAF50" if habit["progress"] <= habit["goal"] else "#FFD700"
         card_opacity = "0.4" if habit["progress"] >= habit["goal"] else "1.0"
 
-        # Render card
-        st.markdown(
-            f"""
-            <div class="habit-card" style="opacity:{card_opacity};">
-                <div class="habit-title">{habit['name']}</div>
-                <div class="habit-sub">{habit['frequency']}</div>
-                <div class="progress-container">
-                    <div class="progress-bar" style="width:{progress_width}%; background-color:{bar_color};"></div>
-                </div>
-                <div class="habit-sub">Progress: {habit['progress']} / {habit['goal']}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        # Render card with inline buttons
+        card = st.container()
+        with card:
+            col_main, col_btns = st.columns([8, 2])  # wider main, smaller buttons col
 
-        # Compact button row
-        col1, col2, col3, _ = st.columns([0.5, 0.5, 0.5, 6])
-        with col1:
-            if st.button("✅", key=f"done_{i}"):
-                habit["progress"] += 1
-                save_habits(st.session_state.habits)
-                st.rerun()
-        with col2:
-            if st.button("➖", key=f"undo_{i}"):
-                if habit["progress"] > 0:
-                    habit["progress"] -= 1
-                    save_habits(st.session_state.habits)
-                    st.rerun()
-        with col3:
-            if st.button("🗑️", key=f"delete_{i}"):
-                st.session_state.habits.remove(habit)
-                save_habits(st.session_state.habits)
-                st.rerun()
+            # Left side: habit info
+            with col_main:
+                st.markdown(
+                    f"""
+                    <div class="habit-card" style="opacity:{card_opacity}; min-height:70px; display:flex; flex-direction:column; justify-content:center;">
+                        <div class="habit-title">{habit['name']}</div>
+                        <div class="habit-sub">{habit['frequency']}</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width:{progress_width}%; background-color:{bar_color};"></div>
+                        </div>
+                        <div class="habit-sub">Progress: {habit['progress']} / {habit['goal']}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            # Right side: buttons centered vertically
+            with col_btns:
+                st.write("")  # spacer
+                st.write("")  # spacer
+                bcol1, bcol2, bcol3 = st.columns([1, 1, 1], gap="small")
+                with bcol1:
+                    if st.button("✅", key=f"done_{i}", help="Mark done"):
+                        habit["progress"] += 1
+                        save_habits(st.session_state.habits)
+                        st.rerun()
+                with bcol2:
+                    if st.button("➖", key=f"undo_{i}", help="Undo"):
+                        if habit["progress"] > 0:
+                            habit["progress"] -= 1
+                            save_habits(st.session_state.habits)
+                            st.rerun()
+                with bcol3:
+                    if st.button("🗑️", key=f"delete_{i}", help="Delete"):
+                        st.session_state.habits.remove(habit)
+                        save_habits(st.session_state.habits)
+                        st.rerun()
 
 else:
     st.info("No habits yet. Add one from the sidebar!")
