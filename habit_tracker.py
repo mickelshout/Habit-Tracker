@@ -3,6 +3,63 @@ import streamlit as st
 import datetime
 import json
 import os
+import calendar
+
+
+def get_deadline(habit):
+    today = datetime.date.today()
+    last_reset = datetime.date.fromisoformat(habit["last_reset"])
+
+    if habit["frequency"] == "Daily":
+        return today
+
+    elif habit["frequency"] == "Weekly":
+        # ISO weeks: Monday start → deadline is Sunday
+        weekday = today.weekday()  # Monday=0 ... Sunday=6
+        return today + datetime.timedelta(days=(6 - weekday))
+
+    elif habit["frequency"] in ["2 weeks", "3 weeks"]:
+        n_weeks = int(habit["frequency"].split()[0])
+        return last_reset + datetime.timedelta(weeks=n_weeks)
+
+    elif habit["frequency"] == "Monthly":
+        # End of this month
+        days_in_month = calendar.monthrange(today.year, today.month)[1]
+        return datetime.date(today.year, today.month, days_in_month)
+
+    elif "months" in habit["frequency"].lower():
+        n_months = int(habit["frequency"].split()[0])
+        # Add n months to last_reset
+        new_month = (last_reset.month - 1 + n_months) % 12 + 1
+        new_year = last_reset.year + (last_reset.month - 1 + n_months) // 12
+        days_in_month = calendar.monthrange(new_year, new_month)[1]
+        return datetime.date(new_year, new_month, days_in_month)
+
+    else:
+        return None
+
+def format_deadline(habit):
+    if habit["frequency"] == "Daily":
+        return None  # no deadline for daily
+
+    deadline = get_deadline(habit)
+    if not deadline:
+        return None
+
+    today = datetime.date.today()
+    delta_days = (deadline - today).days
+
+    if delta_days < 0:
+        return "expired"
+    elif delta_days == 0:
+        return "today"
+    elif delta_days == 1:
+        return "tomorrow"
+    elif delta_days < 30:
+        return f"in {delta_days} days"
+    else:
+        return deadline.strftime("%-m/%-d")  # e.g. 9/21 (no year)
+
 
 DATA_FILE = "habits.json"
 
@@ -178,11 +235,14 @@ if st.session_state.habits:
 
             # Left side: habit info
             with col_main:
+                deadline_str = format_deadline(habit)
+                deadline_html = f" — Deadline: {deadline_str}" if deadline_str else ""
+
                 st.markdown(
                     f"""
-                    <div class="habit-card" style="opacity:{card_opacity}; min-height:70px; display:flex; flex-direction:column; justify-content:center;">
+                    <div class="habit-card" style="opacity:{card_opacity};">
                         <div class="habit-title">{habit['name']}</div>
-                        <div class="habit-sub">{habit['frequency']}</div>
+                        <div class="habit-sub">{habit['frequency']}{deadline_html}</div>
                         <div class="progress-container">
                             <div class="progress-bar" style="width:{progress_width}%; background-color:{bar_color};"></div>
                         </div>
