@@ -19,8 +19,8 @@ def save_habits(habits):
 
 def reset_if_needed(habit):
     today = datetime.date.today()
-    reset = False
     last_reset = datetime.date.fromisoformat(habit["last_reset"])
+    reset = False
 
     if habit["frequency"] == "Daily" and last_reset != today:
         reset = True
@@ -28,6 +28,12 @@ def reset_if_needed(habit):
         reset = True
     elif habit["frequency"] == "Monthly" and (today.month != last_reset.month or today.year != last_reset.year):
         reset = True
+    elif "months" in habit["frequency"].lower():
+        # Parse number of months
+        n_months = int(habit["frequency"].split()[0])
+        month_diff = (today.year - last_reset.year) * 12 + (today.month - last_reset.month)
+        if month_diff >= n_months:
+            reset = True
 
     if reset:
         habit["progress"] = 0
@@ -74,7 +80,6 @@ st.markdown(
     }
     .progress-bar {
         height: 100%;
-        background-color: #4CAF50;
         transition: width 0.3s;
     }
     </style>
@@ -92,7 +97,10 @@ save_habits(st.session_state.habits)
 # Sidebar: Add new habit
 st.sidebar.header("➕ Add a new habit")
 name = st.sidebar.text_input("Habit name")
-frequency = st.sidebar.selectbox("Frequency", ["Daily", "Weekly", "Monthly"])
+frequency = st.sidebar.selectbox(
+    "Frequency",
+    ["Daily", "Weekly", "Monthly", "2 months", "3 months", "6 months"]
+)
 goal = st.sidebar.number_input("Goal (times)", min_value=1, value=7)
 
 if st.sidebar.button("Add Habit"):
@@ -111,8 +119,11 @@ if st.sidebar.button("Add Habit"):
 if st.session_state.habits:
     st.subheader("📋 Your Habits")
     for i, habit in enumerate(st.session_state.habits):
-        progress_ratio = min(1, habit["progress"] / habit["goal"])
-        progress_width = int(progress_ratio * 100)
+        progress_ratio = habit["progress"] / habit["goal"]
+        progress_width = int(min(progress_ratio, 1) * 100)
+
+        # Change bar color if over goal
+        bar_color = "#4CAF50" if habit["progress"] <= habit["goal"] else "#FFD700"
 
         # Render card
         st.markdown(
@@ -121,7 +132,7 @@ if st.session_state.habits:
                 <div class="habit-title">{habit['name']}</div>
                 <div class="habit-sub">{habit['frequency']}</div>
                 <div class="progress-container">
-                    <div class="progress-bar" style="width:{progress_width}%;"></div>
+                    <div class="progress-bar" style="width:{progress_width}%; background-color:{bar_color};"></div>
                 </div>
                 <div class="habit-sub">Progress: {habit['progress']} / {habit['goal']}</div>
             </div>
