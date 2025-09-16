@@ -1,29 +1,85 @@
 [
     {
-        "name": "dasf",
-        "frequency": "Daily",
-        "goal": 7,
-        "progress": 5,
-        "last_reset": "2025-09-16"
-    },
-    {
-        "name": "dasfadsf",
+        "name": "Vrije avond",
         "frequency": "Weekly",
-        "goal": 7,
+        "goal": 2,
         "progress": 0,
         "last_reset": "2025-09-16"
     },
     {
-        "name": "dasfadsf",
-        "frequency": "Weekly",
-        "goal": 7,
+        "name": "Evaluatie/ritmes updaten",
+        "frequency": "2 months",
+        "goal": 1,
         "progress": 0,
         "last_reset": "2025-09-16"
     },
     {
-        "name": "water drinken",
-        "frequency": "Daily",
-        "goal": 7,
+        "name": "Piano",
+        "frequency": "Weekly",
+        "goal": 1,
+        "progress": 0,
+        "last_reset": "2025-09-16"
+    },
+    {
+        "name": "Nieuw piano nummer",
+        "frequency": "3 months",
+        "goal": 1,
+        "progress": 0,
+        "last_reset": "2025-09-16"
+    },
+    {
+        "name": "Uitgebreid recept koken",
+        "frequency": "2 weeks",
+        "goal": 1,
+        "progress": 0,
+        "last_reset": "2025-09-16"
+    },
+    {
+        "name": "Kookfilmpje kijken",
+        "frequency": "Weekly",
+        "goal": 1,
+        "progress": 0,
+        "last_reset": "2025-09-16"
+    },
+    {
+        "name": "Echt goed recept onder de knie",
+        "frequency": "6 months",
+        "goal": 2,
+        "progress": 0,
+        "last_reset": "2025-09-16"
+    },
+    {
+        "name": "Truffels/shrooms",
+        "frequency": "3 months",
+        "goal": 1,
+        "progress": 0,
+        "last_reset": "2025-09-16"
+    },
+    {
+        "name": "Lsd",
+        "frequency": "6 months",
+        "goal": 1,
+        "progress": 0,
+        "last_reset": "2025-09-16"
+    },
+    {
+        "name": "Ontdekken",
+        "frequency": "2 months",
+        "goal": 1,
+        "progress": 0,
+        "last_reset": "2025-09-16"
+    },
+    {
+        "name": "Hardlopen",
+        "frequency": "Weekly",
+        "goal": 1,
+        "progress": 0,
+        "last_reset": "2025-09-16"
+    },
+    {
+        "name": "Morning workout",
+        "frequency": "Weekly",
+        "goal": 2,
         "progress": 0,
         "last_reset": "2025-09-16"
     }

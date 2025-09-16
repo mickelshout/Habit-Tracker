@@ -26,6 +26,11 @@ def reset_if_needed(habit):
         reset = True
     elif habit["frequency"] == "Weekly" and today.isocalendar()[1] != last_reset.isocalendar()[1]:
         reset = True
+    elif habit["frequency"] in ["2 weeks", "3 weeks"]:
+        n_weeks = int(habit["frequency"].split()[0])
+        week_diff = (today - last_reset).days // 7
+        if week_diff >= n_weeks:
+            reset = True
     elif habit["frequency"] == "Monthly" and (today.month != last_reset.month or today.year != last_reset.year):
         reset = True
     elif "months" in habit["frequency"].lower():
@@ -97,9 +102,10 @@ save_habits(st.session_state.habits)
 # Sidebar: Add new habit
 st.sidebar.header("➕ Add a new habit")
 name = st.sidebar.text_input("Habit name")
+
 frequency = st.sidebar.selectbox(
     "Frequency",
-    ["Daily", "Weekly", "Monthly", "2 months", "3 months", "6 months"]
+    ["Daily", "Weekly", "2 weeks", "3 weeks", "Monthly", "2 months", "3 months", "6 months"]
 )
 goal = st.sidebar.number_input("Goal (times)", min_value=1, value=7)
 
@@ -117,21 +123,47 @@ if st.sidebar.button("Add Habit"):
 
 # --- Sorting helper ---
 def sort_habits(habits):
-    order = {"Daily": 1, "Weekly": 2, "Monthly": 3,
-             "2 months": 4, "3 months": 5, "6 months": 6}
+    order = {
+        "Daily": 1, "Weekly": 2, "2 weeks": 3, "3 weeks": 4,
+        "Monthly": 5, "2 months": 6, "3 months": 7, "6 months": 8
+    }
 
     def habit_key(h):
         base_order = order.get(h["frequency"], 99)
         goal_met = h["progress"] >= h["goal"]
-        # Put completed ones at bottom by adding 100
-        return (base_order + (100 if goal_met else 0), h["name"].lower())
+        # Sort order:
+        # 1. Frequency (low → high)
+        # 2. Goal size (high → low → so we negate it)
+        # 3. Name alphabetically
+        return (
+            base_order + (100 if goal_met else 0),
+            -h["goal"],
+            h["name"].lower()
+        )
 
     return sorted(habits, key=habit_key)
+
+# Sidebar filter
+view_filter = st.sidebar.selectbox(
+    "Show habits",
+    ["All", "Daily", "Weekly", "Monthly"]
+)
 
 # --- Display habits ---
 if st.session_state.habits:
     st.subheader("📋 Your Habits")
-    for i, habit in enumerate(sort_habits(st.session_state.habits)):
+    # Apply filter
+    if view_filter != "All":
+        if view_filter == "Daily":
+            habits_to_show = [h for h in st.session_state.habits if h["frequency"] == "Daily"]
+        elif view_filter == "Weekly":
+            habits_to_show = [h for h in st.session_state.habits if "week" in h["frequency"].lower()]
+        elif view_filter == "Monthly":
+            habits_to_show = [h for h in st.session_state.habits if "month" in h["frequency"].lower()]
+    else:
+        habits_to_show = st.session_state.habits
+
+    for i, habit in enumerate(sort_habits(habits_to_show)):
         progress_ratio = habit["progress"] / habit["goal"]
         progress_width = int(min(progress_ratio, 1) * 100)
 
