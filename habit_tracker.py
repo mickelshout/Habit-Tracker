@@ -39,7 +39,7 @@ def reset_if_needed(habit):
 st.set_page_config(page_title="Habit Tracker", page_icon="✅", layout="centered")
 st.title("✨ Habit Tracker")
 
-# Custom CSS for card styling
+# Custom CSS
 st.markdown(
     """
     <style>
@@ -86,7 +86,6 @@ st.markdown(
 if "habits" not in st.session_state:
     st.session_state.habits = load_habits()
 
-# Reset habits
 st.session_state.habits = [reset_if_needed(h) for h in st.session_state.habits]
 save_habits(st.session_state.habits)
 
@@ -112,7 +111,7 @@ if st.sidebar.button("Add Habit"):
 if st.session_state.habits:
     st.subheader("📋 Your Habits")
     for i, habit in enumerate(st.session_state.habits):
-        progress_ratio = habit["progress"] / habit["goal"]
+        progress_ratio = min(1, habit["progress"] / habit["goal"])
         progress_width = int(progress_ratio * 100)
 
         # Render card
@@ -130,9 +129,21 @@ if st.session_state.habits:
             unsafe_allow_html=True,
         )
 
-        if st.button("✅ Done", key=f"done_{i}"):
-            if habit["progress"] < habit["goal"]:
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if st.button("✅ Done", key=f"done_{i}"):
                 habit["progress"] += 1
+                save_habits(st.session_state.habits)
+                st.rerun()
+        with col2:
+            if st.button("➖ Undo", key=f"undo_{i}"):
+                if habit["progress"] > 0:
+                    habit["progress"] -= 1
+                    save_habits(st.session_state.habits)
+                    st.rerun()
+        with col3:
+            if st.button("🗑️ Delete", key=f"delete_{i}"):
+                st.session_state.habits.pop(i)
                 save_habits(st.session_state.habits)
                 st.rerun()
 else:
