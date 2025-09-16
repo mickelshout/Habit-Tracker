@@ -135,11 +135,14 @@ if st.session_state.habits:
         progress_ratio = habit["progress"] / habit["goal"]
         progress_width = int(min(progress_ratio, 1) * 100)
 
+        # Colors
         bar_color = "#4CAF50" if habit["progress"] <= habit["goal"] else "#FFD700"
+        card_opacity = "0.4" if habit["progress"] >= habit["goal"] else "1.0"
 
+        # Render card
         st.markdown(
             f"""
-            <div class="habit-card">
+            <div class="habit-card" style="opacity:{card_opacity};">
                 <div class="habit-title">{habit['name']}</div>
                 <div class="habit-sub">{habit['frequency']}</div>
                 <div class="progress-container">
@@ -151,7 +154,8 @@ if st.session_state.habits:
             unsafe_allow_html=True,
         )
 
-        col1, col2, col3 = st.columns([1, 1, 1])
+        # Compact button row
+        col1, col2, col3, _ = st.columns([0.5, 0.5, 0.5, 6])
         with col1:
             if st.button("✅", key=f"done_{i}"):
                 habit["progress"] += 1
@@ -168,5 +172,6 @@ if st.session_state.habits:
                 st.session_state.habits.remove(habit)
                 save_habits(st.session_state.habits)
                 st.rerun()
+
 else:
     st.info("No habits yet. Add one from the sidebar!")
