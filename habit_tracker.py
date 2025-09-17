@@ -14,26 +14,31 @@ def get_deadline(habit):
         return today
 
     elif habit["frequency"] == "Weekly":
-        # ISO weeks: Monday start → deadline is Sunday
-        weekday = today.weekday()  # Monday=0 ... Sunday=6
-        return today + datetime.timedelta(days=(6 - weekday))
+        # End of this ISO week (Sunday)
+        return today + datetime.timedelta(days=(6 - today.weekday()))
 
     elif habit["frequency"] in ["2 weeks", "3 weeks"]:
         n_weeks = int(habit["frequency"].split()[0])
-        return last_reset + datetime.timedelta(weeks=n_weeks)
+        # Next Monday aligned to N-week block
+        last_monday = last_reset - datetime.timedelta(days=last_reset.weekday())
+        next_reset = last_monday + datetime.timedelta(weeks=n_weeks)
+        return next_reset - datetime.timedelta(days=1)  # Sunday before reset
 
     elif habit["frequency"] == "Monthly":
-        # End of this month
+        # End of current month
         days_in_month = calendar.monthrange(today.year, today.month)[1]
         return datetime.date(today.year, today.month, days_in_month)
 
     elif "months" in habit["frequency"].lower():
         n_months = int(habit["frequency"].split()[0])
-        # Add n months to last_reset
-        new_month = (last_reset.month - 1 + n_months) % 12 + 1
-        new_year = last_reset.year + (last_reset.month - 1 + n_months) // 12
-        days_in_month = calendar.monthrange(new_year, new_month)[1]
-        return datetime.date(new_year, new_month, days_in_month)
+        # First day of reset month
+        first_of_last = datetime.date(last_reset.year, last_reset.month, 1)
+        # Target reset month
+        reset_month = (first_of_last.month - 1 + n_months) % 12 + 1
+        reset_year = first_of_last.year + (first_of_last.month - 1 + n_months) // 12
+        # Deadline = last day before reset month starts
+        days_in_month = calendar.monthrange(reset_year, reset_month)[1]
+        return datetime.date(reset_year, reset_month, 1) - datetime.timedelta(days=1)
 
     else:
         return None
@@ -79,21 +84,41 @@ def reset_if_needed(habit):
     last_reset = datetime.date.fromisoformat(habit["last_reset"])
     reset = False
 
+    # Daily: reset every day at midnight
     if habit["frequency"] == "Daily" and last_reset != today:
         reset = True
-    elif habit["frequency"] == "Weekly" and today.isocalendar()[1] != last_reset.isocalendar()[1]:
-        reset = True
+
+    # Weekly: reset every Monday
+    elif habit["frequency"] == "Weekly":
+        if today.isocalendar()[1] != last_reset.isocalendar()[1]:
+            # New ISO week → reset
+            reset = True
+
+    # 2 weeks and 3 weeks: reset on Monday after N weeks
     elif habit["frequency"] in ["2 weeks", "3 weeks"]:
         n_weeks = int(habit["frequency"].split()[0])
-        week_diff = (today - last_reset).days // 7
+        # Find the Monday of last_reset's ISO week
+        last_monday = last_reset - datetime.timedelta(days=last_reset.weekday())
+        # Find the Monday for today
+        this_monday = today - datetime.timedelta(days=today.weekday())
+        week_diff = (this_monday - last_monday).days // 7
         if week_diff >= n_weeks:
             reset = True
-    elif habit["frequency"] == "Monthly" and (today.month != last_reset.month or today.year != last_reset.year):
-        reset = True
+
+    # Monthly: reset on the 1st of a new month
+    elif habit["frequency"] == "Monthly":
+        if today.month != last_reset.month or today.year != last_reset.year:
+            reset = True
+
+    # Multi-month (2, 3, 6 months): reset on 1st of the next Nth month
     elif "months" in habit["frequency"].lower():
-        # Parse number of months
         n_months = int(habit["frequency"].split()[0])
-        month_diff = (today.year - last_reset.year) * 12 + (today.month - last_reset.month)
+        # First day of current month
+        first_of_this_month = datetime.date(today.year, today.month, 1)
+        # First day of last_reset's month
+        first_of_last = datetime.date(last_reset.year, last_reset.month, 1)
+        # Month difference
+        month_diff = (first_of_this_month.year - first_of_last.year) * 12 + (first_of_this_month.month - first_of_last.month)
         if month_diff >= n_months:
             reset = True
 
@@ -249,30 +274,4 @@ if st.session_state.habits:
                         <div class="habit-sub">Progress: {habit['progress']} / {habit['goal']}</div>
                     </div>
                     """,
-                    unsafe_allow_html=True,
-                )
-
-            # Right side: buttons centered vertically
-            with col_btns:
-                st.write("")  # spacer
-                st.write("")  # spacer
-                bcol1, bcol2, bcol3 = st.columns([1, 1, 1], gap="small")
-                with bcol1:
-                    if st.button("✅", key=f"done_{i}", help="Mark done"):
-                        habit["progress"] += 1
-                        save_habits(st.session_state.habits)
-                        st.rerun()
-                with bcol2:
-                    if st.button("➖", key=f"undo_{i}", help="Undo"):
-                        if habit["progress"] > 0:
-                            habit["progress"] -= 1
-                            save_habits(st.session_state.habits)
-                            st.rerun()
-                with bcol3:
-                    if st.button("🗑️", key=f"delete_{i}", help="Delete"):
-                        st.session_state.habits.remove(habit)
-                        save_habits(st.session_state.habits)
-                        st.rerun()
-
-else:
-    st.info("No habits yet. Add one from the sidebar!")
+                 
