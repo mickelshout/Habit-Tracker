@@ -91,15 +91,12 @@ def reset_if_needed(habit):
     # Weekly: reset every Monday
     elif habit["frequency"] == "Weekly":
         if today.isocalendar()[1] != last_reset.isocalendar()[1]:
-            # New ISO week → reset
             reset = True
 
     # 2 weeks and 3 weeks: reset on Monday after N weeks
     elif habit["frequency"] in ["2 weeks", "3 weeks"]:
         n_weeks = int(habit["frequency"].split()[0])
-        # Find the Monday of last_reset's ISO week
         last_monday = last_reset - datetime.timedelta(days=last_reset.weekday())
-        # Find the Monday for today
         this_monday = today - datetime.timedelta(days=today.weekday())
         week_diff = (this_monday - last_monday).days // 7
         if week_diff >= n_weeks:
@@ -113,20 +110,24 @@ def reset_if_needed(habit):
     # Multi-month (2, 3, 6 months): reset on 1st of the next Nth month
     elif "months" in habit["frequency"].lower():
         n_months = int(habit["frequency"].split()[0])
-        # First day of current month
         first_of_this_month = datetime.date(today.year, today.month, 1)
-        # First day of last_reset's month
         first_of_last = datetime.date(last_reset.year, last_reset.month, 1)
-        # Month difference
         month_diff = (first_of_this_month.year - first_of_last.year) * 12 + (first_of_this_month.month - first_of_last.month)
         if month_diff >= n_months:
             reset = True
 
     if reset:
+        # Mark as missed if not completed
+        habit["missed_last"] = habit["progress"] < habit["goal"]
         habit["progress"] = 0
         habit["last_reset"] = str(today)
+    else:
+        # Default if not reset
+        if "missed_last" not in habit:
+            habit["missed_last"] = False
 
     return habit
+
 
 # --- Page setup ---
 st.set_page_config(page_title="Habit Tracker", page_icon="✅", layout="centered")
@@ -274,4 +275,34 @@ if st.session_state.habits:
                         <div class="habit-sub">Progress: {habit['progress']} / {habit['goal']}</div>
                     </div>
                     """,
-                 
+                    unsafe_allow_html=True,
+                )
+
+            # Right side: buttons centered vertically
+            with col_btns:
+                st.write("")  # spacer
+                st.write("")  # spacer
+                bcol1, bcol2, bcol3 = st.columns([1, 1, 1], gap="small")
+                with bcol1:
+                    if st.button("✅", key=f"done_{i}", help="Mark done"):
+                        habit["progress"] += 1
+                        save_habits(st.session_state.habits)
+                        st.rerun()
+                with bcol2:
+                    if st.button("➖", key=f"undo_{i}", help="Undo"):
+                        if habit["progress"] > 0:
+                            habit["progress"] -= 1
+                            save_habits(st.session_state.habits)
+                            st.rerun()
+                with bcol3:
+                    missed_dot = " 🔴" if habit.get("missed_last", False) else ""
+                    if st.button("🗑️", key=f"delete_{i}", help="Delete"):
+                        st.session_state.habits.remove(habit)
+                        save_habits(st.session_state.habits)
+                        st.rerun()
+                    st.markdown(f"<div style='text-align:center; font-size:18px;'>{missed_dot}</div>",
+                                unsafe_allow_html=True)
+
+
+else:
+    st.info("No habits yet. Add one from the sidebar!")
